@@ -1,0 +1,46 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'board/header.css' %}">
+
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <a class="brand-link" href="{% url 'home' %}">StudioBoard</a>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-link" href="{% url 'home' %}">Accueil</a>
+
+      {% if all_boards %}
+        <div class="board-switch">
+          <label class="board-switch-label" for="boardSwitch">Board</label>
+          <select
+            id="boardSwitch"
+            class="board-switch-select"
+            onchange="if(this.value){ window.location.href = this.value; }"
+            aria-label="Changer de board"
+          >
+            {% for b in all_boards %}
+              <option
+                value="{% url 'board:kanban' b.id %}"
+                {% if current_board and b.id == current_board.id %}selected{% endif %}
+              >
+                {{ b.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% if current_board %}
+          <a class="nav-link" href="{% url 'board:kanban' current_board.id %}">Kanban</a>
+          <a class="nav-link" href="{% url 'board:template_list' current_board.id %}">Templates</a>
+        {% else %}
+          <a class="nav-link" href="/admin/board/board/">Créer un board</a>
+        {% endif %}
+      {% else %}
+        <a class="nav-link" href="/admin/board/board/">Créer un board</a>
+      {% endif %}
+
+      <a class="nav-link nav-admin" href="/admin/">Admin</a>
+    </nav>
+  </div>
+</header>

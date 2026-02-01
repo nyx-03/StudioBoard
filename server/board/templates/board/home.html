@@ -1,0 +1,94 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StudioBoard — Accueil</title>
+  <link rel="stylesheet" href="{% static 'board/idea_form.css' %}">
+  <link rel="stylesheet" href="{% static 'board/home.css' %}">
+</head>
+<body>
+  {% include "board/_header.html" %}
+
+  <div class="wrap">
+    <div class="panel">
+      <div class="hero">
+        <div class="hero-col">
+          <h1>Suivre tes idées. Structurer tes projets. Réutiliser tes templates.</h1>
+          <p>
+            StudioBoard est un petit “studio” personnel pour capturer, organiser et faire évoluer tes idées.
+            Tu travailles en colonnes (Kanban), tu rédiges en Markdown, et tu transformes une idée en template en 1 clic.
+          </p>
+          <div class="actions hero-actions">
+            <!-- On branchera ces liens dès qu'on sait l'URL du board par défaut -->
+            <a class="btn" href="/admin/board/board/">Ouvrir mes boards</a>
+            <a class="btn secondary" href="/admin/board/ideatemplate/">Gérer les templates</a>
+          </div>
+          <div class="muted hero-tip">
+            Astuce : tu peux l’héberger sur ton Raspberry Pi et y accéder depuis Mac + téléphone.
+          </div>
+        </div>
+
+        <div class="hero-col">
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="section-title">1) Board</div>
+              <div class="muted">Ton espace de travail (ex: “Studio”, “Marketing”, “Apps”).</div>
+            </div>
+            <div class="kpi">
+              <div class="section-title">2) Colonnes</div>
+              <div class="muted">Backlog → En cours → À valider → Fait.</div>
+            </div>
+            <div class="kpi">
+              <div class="section-title">3) Idées</div>
+              <div class="muted">Titre + tags + impact + next action + Markdown.</div>
+            </div>
+            <div class="kpi">
+              <div class="section-title">4) Templates</div>
+              <div class="muted">Réutiliser des structures (cadrage, CDC, checklists…).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel spaced">
+      <div class="section-title">Quick Add</div>
+      <div class="muted">Ajouter une idée rapidement avec une seule ligne :</div>
+      <pre class="code">Ajouter une idée… (#tags @colonne !impact)
+
+Exemple :
+Refonte page d’accueil #marketing @Backlog !impact=3</pre>
+    </div>
+
+    <div class="panel spaced">
+      <div class="section-title">Templates</div>
+      <div class="muted">
+        Quand une idée a une structure utile, tu peux la sauvegarder comme template et la réutiliser à la création/édition.
+        L’aperçu Markdown se met à jour automatiquement pendant que tu tapes.
+      </div>
+    </div>
+    <div class="panel spaced">
+      <div class="section-title">Dernières idées</div>
+
+      {% if last_ideas %}
+        <div class="recent-list">
+          {% for idea in last_ideas %}
+            <a class="recent-item" href="{% url 'board:idea_detail' idea.column.board.id idea.id %}">
+              <div class="recent-title">{{ idea.title }}</div>
+              <div class="recent-meta">
+                <span class="pill">Board : <b>{{ idea.column.board.name }}</b></span>
+                <span class="pill">Colonne : <b>{{ idea.column.name }}</b></span>
+                <span class="pill">Créée : <b>{{ idea.created_at|date:"d/m/Y H:i" }}</b></span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="muted">Aucune idée pour le moment.</div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
