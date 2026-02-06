@@ -40,6 +40,10 @@ media/
 *.key
 *.pem
 
+# Frontend environment
+client/.env
+client/.env.*
+
 # =============================
 # OS / IDE
 # =============================
@@ -63,7 +67,26 @@ build/
 dist/
 
 # =============================
+# Next.js
+# =============================
+node_modules/
+.next/
+out/
+.vercel/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =============================
 # Scripts artifacts
 # =============================
 *.bak
 *.tmp
+
+# =============================
+# Tooling / caches
+# =============================
+.turbo/
+.eslintcache
+.stylelintcache
