@@ -1,4 +1,4 @@
-# BlueprintStudio
+# Studio Board
 
 Studio personnel de suivi d'idées, projets et modules.
 
