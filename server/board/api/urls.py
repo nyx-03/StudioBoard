@@ -16,46 +16,52 @@ from .views_ideas import (
     board_idea_quick_add_api,
     board_idea_update_api,
     board_idea_move_api,
+    board_idea_convert_api,
     board_column_reorder_api,
 )
 
 urlpatterns = [
     # Boards
-    path("boards", boards_list_api, name="api_boards_list"),
-    path("boards/<int:board_id>/kanban", board_kanban_api, name="api_board_kanban"),
+    path("boards/", boards_list_api, name="api_boards_list"),
+    path("boards/<int:board_id>/kanban/", board_kanban_api, name="api_board_kanban"),
 
     # Ideas
     path(
-        "boards/<int:board_id>/ideas/quick-add",
+        "boards/<int:board_id>/ideas/quick-add/",
         board_idea_quick_add_api,
         name="api_board_idea_quick_add",
     ),
     path(
-        "boards/<int:board_id>/ideas/<int:idea_id>",
+        "boards/<int:board_id>/ideas/<int:idea_id>/",
         board_idea_detail_api,
         name="api_board_idea_detail",
     ),
     path(
-        "boards/<int:board_id>/ideas/<int:idea_id>/update",
+        "boards/<int:board_id>/ideas/<int:idea_id>/update/",
         board_idea_update_api,
         name="api_board_idea_update",
     ),
     path(
-        "boards/<int:board_id>/ideas/<int:idea_id>/move",
+        "boards/<int:board_id>/ideas/<int:idea_id>/convert/",
+        board_idea_convert_api,
+        name="api_board_idea_convert",
+    ),
+    path(
+        "boards/<int:board_id>/ideas/<int:idea_id>/move/",
         board_idea_move_api,
         name="api_board_idea_move",
     ),
 
     # Columns
     path(
-        "boards/<int:board_id>/columns/<int:column_id>/reorder",
+        "boards/<int:board_id>/columns/<int:column_id>/reorder/",
         board_column_reorder_api,
         name="api_board_column_reorder",
     ),
 
     # Auth
-    path("auth/me", auth_me_api, name="api_auth_me"),
-    path("auth/login", auth_login_api, name="api_auth_login"),
-    path("auth/logout", auth_logout_api, name="api_auth_logout"),
-    path("auth/csrf", auth_csrf_api, name="api_auth_csrf"),
+    path("auth/me/", auth_me_api, name="api_auth_me"),
+    path("auth/login/", auth_login_api, name="api_auth_login"),
+    path("auth/logout/", auth_logout_api, name="api_auth_logout"),
+    path("auth/csrf/", auth_csrf_api, name="api_auth_csrf"),
 ]

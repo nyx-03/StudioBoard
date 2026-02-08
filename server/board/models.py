@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -14,8 +15,9 @@ class Board(TimeStampedModel):
     """
     name = models.CharField(max_length=120, unique=True)
     description = models.TextField(blank=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="boards")
 
-    def __str__(self) -> self:
+    def __str__(self) -> str:
         return self.name
 
 class Column(TimeStampedModel):
@@ -25,6 +27,23 @@ class Column(TimeStampedModel):
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name="columns")
     name = models.CharField(max_length=80)
     order = models.PositiveIntegerField(default=0)
+
+    KIND_NORMAL = "normal"
+    KIND_VALIDATED = "validated"
+    KIND_ARCHIVED = "archived"
+
+    KIND_CHOICES = [
+        (KIND_NORMAL, "Normale"),
+        (KIND_VALIDATED, "Validée"),
+        (KIND_ARCHIVED, "Archivée"),
+    ]
+
+    kind = models.CharField(
+        max_length=12,
+        choices=KIND_CHOICES,
+        default=KIND_NORMAL,
+        help_text="Rôle fonctionnel de la colonne (logique métier)"
+    )
 
     class Meta:
         ordering = ["order", "id"]
@@ -61,6 +80,12 @@ class Idea(TimeStampedModel):
 
     column = models.ForeignKey(Column, on_delete=models.CASCADE, related_name="ideas")
 
+    converted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date de conversion de l'idée en projet (si applicable).",
+    )
+
     title = models.CharField(max_length=180)
     body_md = models.TextField(blank=True)
     status = models.CharField(max_length=12, choices=IdeaStatus.choices, default=IdeaStatus.ACTIVE)
@@ -82,6 +107,31 @@ class Idea(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.title
+
+
+# Extension 'Projet' pour une idée convertie en projet
+class IdeaProject(TimeStampedModel):
+    """
+    Extension 'Projet' attachée à une Idea convertie.
+    Une idée devient un projet quand cette extension existe.
+    """
+    idea = models.OneToOneField(
+        Idea,
+        on_delete=models.CASCADE,
+        related_name="project",
+        help_text="Idea source de ce projet",
+    )
+
+    goals = models.TextField(blank=True, help_text="Objectifs (Markdown autorisé).")
+    scope = models.TextField(blank=True, help_text="Périmètre / inclusions-exclusions.")
+    definition_of_done = models.TextField(blank=True, help_text="Définition de terminé (DoD).")
+    due_date = models.DateField(null=True, blank=True, help_text="Échéance cible (optionnelle).")
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Project: {self.idea.title}"
 
 
 class IdeaTemplate(models.Model):

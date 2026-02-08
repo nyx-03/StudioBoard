@@ -10,7 +10,7 @@ def boards_list_api(request):
     if not request.user.is_authenticated:
         return json_nostore({"boards": []})
 
-    boards = Board.objects.order_by("id").values("id", "name")
+    boards = Board.objects.filter(owner=request.user).order_by("id").values("id", "name")
     return json_nostore({"boards": list(boards)})
 
 
@@ -21,6 +21,8 @@ def board_kanban_api(request, board_id):
         return err
 
     board = get_object_or_404(Board, id=board_id)
+    if board.owner_id != request.user.id:
+        return json_nostore({"detail": "Forbidden"}, status=403)
 
     columns_qs = Column.objects.filter(board=board).order_by("order", "id")
     ideas_qs = (

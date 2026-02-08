@@ -15,7 +15,8 @@ from .services.ideas import (
     reorder_column,
     quick_add_idea,
 )
-from ..models import Board, Column, Idea
+from django.utils import timezone
+from ..models import Board, Column, Idea, IdeaProject
 
 
 # -----------------------------------------------------------------------------
@@ -35,6 +36,9 @@ def _payload_or_400(request):
 
 def _get_board(board_id: int) -> Board:
     return get_object_or_404(Board, id=board_id)
+
+def _get_board_owned(request, board_id: int) -> Board:
+    return get_object_or_404(Board, id=board_id, owner=request.user)
 
 
 def _get_idea_in_board(board: Board, idea_id: int) -> Idea:
@@ -64,7 +68,8 @@ def board_idea_detail_api(request, board_id, idea_id):
     if err:
         return err
 
-    board = _get_board(board_id)
+    board = _get_board_owned(request, board_id)
+
     idea = _get_idea_in_board(board, idea_id)
 
     return json_nostore({"board": serialize_board(board), "idea": serialize_idea_detail(idea)})
@@ -81,7 +86,8 @@ def board_idea_update_api(request, board_id, idea_id):
     if err:
         return err
 
-    board = _get_board(board_id)
+    board = _get_board_owned(request, board_id)
+
     idea = _get_idea_in_board(board, idea_id)
 
     payload, bad = _payload_or_400(request)
@@ -163,6 +169,71 @@ def board_idea_update_api(request, board_id, idea_id):
 
 
 @require_POST
+def board_idea_convert_api(request, board_id, idea_id):
+    """
+    Convert an Idea into a Project.
+    - Creates IdeaProject if not exists
+    - Sets converted_at timestamp
+    - Moves idea to the validated column (kind="validated")
+    """
+    err = _ensure_auth(request)
+    if err:
+        return err
+
+    board = _get_board_owned(request, board_id)
+
+    idea = _get_idea_in_board(board, idea_id)
+
+    # Already converted
+    if idea.converted_at:
+        return json_nostore({"error": "Idea already converted"}, status=400)
+
+    # Find validated column
+    validated_col = (
+        Column.objects
+        .filter(board=board, kind="validated")
+        .order_by("order", "id")
+        .first()
+    )
+
+    if not validated_col:
+        return json_nostore(
+            {"error": "No validated column found on this board"},
+            status=400,
+        )
+
+    # Create project extension
+    project = IdeaProject.objects.create(idea=idea)
+
+    # Update idea
+    idea.converted_at = timezone.now()
+    idea.column = validated_col
+    idea.save(update_fields=["converted_at", "column"])
+
+    debug_log(
+        "[CONVERT] idea_id=%s -> project_id=%s column_id=%s",
+        idea.id,
+        project.id,
+        validated_col.id,
+    )
+
+    # Reload idea with relations
+    idea = _get_idea_in_board(board, idea.id)
+
+    return json_nostore(
+        {
+            "ok": True,
+            "idea": serialize_idea_detail(idea),
+            "project": {
+                "id": project.id,
+                "created_at": project.created_at,
+            },
+        },
+        status=201,
+    )
+
+
+@require_POST
 def board_idea_move_api(request, board_id, idea_id):
     """
     Move/reorder via DnD.
@@ -171,6 +242,10 @@ def board_idea_move_api(request, board_id, idea_id):
     err = _ensure_auth(request)
     if err:
         return err
+
+    board = _get_board_owned(request, board_id)
+
+    idea = _get_idea_in_board(board, idea_id)
 
     payload, bad = _payload_or_400(request)
     if bad:
@@ -226,11 +301,19 @@ def board_column_reorder_api(request, board_id, column_id):
     if err:
         return err
 
+    board = _get_board_owned(request, int(board_id))
+    column = get_object_or_404(Column, id=int(column_id), board=board)
+
     payload, bad = _payload_or_400(request)
     if bad:
         return bad
 
-    ordered_ids = payload.get("ordered_ids") or payload.get("orderedIds") or payload.get("ids")
+    ordered_ids = (
+            payload.get("ordered_ids")
+            or payload.get("orderedIds")
+            or payload.get("ids")
+            or payload.get("order")  # compat tests
+    )
     if isinstance(ordered_ids, str):
         try:
             import json as _json
@@ -238,7 +321,7 @@ def board_column_reorder_api(request, board_id, column_id):
         except Exception:
             pass
 
-    if not isinstance(ordered_ids, list) or not ordered_ids:
+    if not isinstance(ordered_ids, list) or len(ordered_ids) == 0:
         return json_nostore({"error": "ordered_ids must be a non-empty list"}, status=400)
 
     try:
@@ -246,14 +329,35 @@ def board_column_reorder_api(request, board_id, column_id):
     except Exception:
         return json_nostore({"error": "ordered_ids must be integers"}, status=400)
 
-    debug_log("[REORDER] board_id=%s column_id=%s ordered_ids=%s", board_id, column_id, ordered_ids)
+    # pas de doublons
+    if len(set(ordered_ids)) != len(ordered_ids):
+        return json_nostore({"error": "ordered_ids must not contain duplicates"}, status=400)
+
+    # ids actuellement dans la colonne (ordre actuel)
+    current_ids = list(
+        Idea.objects.filter(column=column)
+        .order_by("position", "id")
+        .values_list("id", flat=True)
+    )
+
+    # ordered_ids doit être un sous-ensemble de la colonne
+    current_set = set(current_ids)
+    if any(i not in current_set for i in ordered_ids):
+        return json_nostore({"error": "Some ideas do not belong to this column"}, status=400)
+
+    # compléter automatiquement avec les ids manquants (robuste pour DnD/tests)
+    missing = [i for i in current_ids if i not in ordered_ids]
+    final_order = ordered_ids + missing
+
+    debug_log("[REORDER] board_id=%s column_id=%s ordered_ids=%s final=%s", board_id, column_id, ordered_ids,
+              final_order)
 
     try:
-        reorder_column(board_id=int(board_id), column_id=int(column_id), ordered_ids=ordered_ids)
+        reorder_column(board_id=int(board_id), column_id=int(column_id), ordered_ids=final_order)
     except ValueError:
         return json_nostore({"error": "Some ideas do not belong to this column"}, status=400)
 
-    return json_nostore({"ok": True})
+    return json_nostore({"ok": True, "ordered_ids": final_order})
 
 
 @require_POST
@@ -266,6 +370,8 @@ def board_idea_quick_add_api(request, board_id):
     if err:
         return err
 
+    board = _get_board_owned(request, board_id)
+
     payload, bad = _payload_or_400(request)
     if bad:
         return bad
@@ -275,8 +381,6 @@ def board_idea_quick_add_api(request, board_id):
 
     if not raw_text:
         return json_nostore({"error": "Text or title is required"}, status=400)
-
-    board = _get_board(board_id)
 
     # Simple inline parsing: #tag @column !impact
     words = raw_text.split()
