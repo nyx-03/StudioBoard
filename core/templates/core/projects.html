@@ -95,8 +95,19 @@
               </div>
               <div class="meta">{% if entry.is_dir %}Dossier{% else %}Fichier{% endif %}</div>
             </div>
-            <div class="meta file-meta">
-              {% if entry.size %}{{ entry.size }} · {% endif %}{{ entry.modified|date:"Y-m-d H:i" }}
+            <div class="file-meta">
+              <div class="meta">
+                {% if entry.size %}{{ entry.size }} · {% endif %}{{ entry.modified|date:"Y-m-d H:i" }}
+              </div>
+              {% if entry.is_dir %}
+                <form method="post" class="file-actions" onsubmit="return confirm('Supprimer ce dossier ?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_folder" />
+                  <input type="hidden" name="path" value="{{ relative_path }}" />
+                  <input type="hidden" name="target_path" value="{{ entry.rel_path }}" />
+                  <button class="button ghost" type="submit">Supprimer</button>
+                </form>
+              {% endif %}
             </div>
           </div>
         {% endfor %}

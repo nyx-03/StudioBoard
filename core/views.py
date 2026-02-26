@@ -361,6 +361,26 @@ class ProjectsView(LoginRequiredMixin, View):
                             except (ValueError, OSError):
                                 messages.error(request, "Impossible d'importer ce dossier.")
 
+        if action == "delete_folder":
+            target_rel = request.POST.get("target_path", "")
+            try:
+                target_path = _resolve_projects_path(root, target_rel)
+            except ValueError:
+                messages.error(request, "Chemin invalide.")
+            else:
+                if target_path == root:
+                    messages.error(request, "Suppression de la racine interdite.")
+                elif not target_path.exists():
+                    messages.error(request, "Dossier introuvable.")
+                elif not target_path.is_dir():
+                    messages.error(request, "Ce chemin n'est pas un dossier.")
+                else:
+                    try:
+                        shutil.rmtree(target_path)
+                        messages.success(request, "Dossier supprime.")
+                    except OSError:
+                        messages.error(request, "Impossible de supprimer ce dossier.")
+
         target_url = reverse_lazy("projects")
         if rel_path:
             target_url = f"{target_url}?path={quote(rel_path)}"

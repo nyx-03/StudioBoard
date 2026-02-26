@@ -326,7 +326,15 @@ body {
 }
 
 .file-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
   text-align: right;
+}
+
+.file-actions {
+  margin-top: 8px;
 }
 
 .kanban-section {
@@ -485,6 +493,7 @@ body {
   }
 
   .file-meta {
+    align-items: flex-start;
     text-align: left;
   }
 
