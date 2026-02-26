@@ -100,13 +100,19 @@
                 {% if entry.size %}{{ entry.size }} · {% endif %}{{ entry.modified|date:"Y-m-d H:i" }}
               </div>
               {% if entry.is_dir %}
-                <form method="post" class="file-actions" onsubmit="return confirm('Supprimer ce dossier ?');">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="delete_folder" />
-                  <input type="hidden" name="path" value="{{ relative_path }}" />
-                  <input type="hidden" name="target_path" value="{{ entry.rel_path }}" />
-                  <button class="button ghost" type="submit">Supprimer</button>
-                </form>
+                <div class="file-actions">
+                  <form method="get" action="{% url 'project_download' %}">
+                    <input type="hidden" name="path" value="{{ entry.rel_path }}" />
+                    <button class="button secondary" type="submit">Telecharger</button>
+                  </form>
+                  <form method="post" onsubmit="return confirm('Supprimer ce dossier ?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_folder" />
+                    <input type="hidden" name="path" value="{{ relative_path }}" />
+                    <input type="hidden" name="target_path" value="{{ entry.rel_path }}" />
+                    <button class="button ghost" type="submit">Supprimer</button>
+                  </form>
+                </div>
               {% endif %}
             </div>
           </div>

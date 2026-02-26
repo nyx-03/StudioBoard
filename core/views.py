@@ -5,6 +5,7 @@ import re
 import shutil
 import socket
 import subprocess
+import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path, PurePosixPath
@@ -15,10 +16,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import FileResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
@@ -441,6 +442,52 @@ class ProjectsView(LoginRequiredMixin, View):
             "breadcrumbs": breadcrumbs,
         }
         return context
+
+
+@login_required
+@require_GET
+def download_project(request):
+    root = _safe_projects_root()
+    rel_path = request.GET.get("path", "")
+    try:
+        target_path = _resolve_projects_path(root, rel_path)
+    except ValueError:
+        return HttpResponseBadRequest("Chemin invalide.")
+
+    if target_path == root:
+        return HttpResponseBadRequest("Telechargement de la racine interdit.")
+    if not target_path.exists() or not target_path.is_dir():
+        return HttpResponseBadRequest("Dossier introuvable.")
+
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    temp_file.close()
+    zip_path = Path(temp_file.name)
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for file_path in target_path.rglob("*"):
+            if file_path.is_file():
+                zip_file.write(file_path, file_path.relative_to(target_path))
+
+    response = FileResponse(
+        open(zip_path, "rb"),
+        as_attachment=True,
+        filename=f"{target_path.name}.zip",
+    )
+    response["Content-Length"] = str(zip_path.stat().st_size)
+
+    original_close = response.close
+
+    def _cleanup():
+        try:
+            original_close()
+        finally:
+            try:
+                zip_path.unlink()
+            except FileNotFoundError:
+                pass
+
+    response.close = _cleanup
+    return response
 
 
 class ItemListView(LoginRequiredMixin, ListView):

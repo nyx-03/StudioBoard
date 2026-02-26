@@ -335,6 +335,10 @@ body {
 
 .file-actions {
   margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .kanban-section {
@@ -495,6 +499,10 @@ body {
   .file-meta {
     align-items: flex-start;
     text-align: left;
+  }
+
+  .file-actions {
+    justify-content: flex-start;
   }
 
   .kanban-board {
