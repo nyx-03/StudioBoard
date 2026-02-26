@@ -1,0 +1,15 @@
+{% extends "core/base.html" %}
+
+{% block title %}Supprimer categorie | StudioBoard{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2>Supprimer cette categorie ?</h2>
+    <p>Les elements associes garderont leur contenu, mais perdront la categorie.</p>
+    <form method="post" class="actions">
+      {% csrf_token %}
+      <button class="button" type="submit">Supprimer</button>
+      <a class="button secondary" href="{% url 'category_list' %}">Annuler</a>
+    </form>
+  </div>
+{% endblock %}

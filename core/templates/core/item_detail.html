@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ object.title }} | StudioBoard{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="section-title">
+      <h2>{{ object.title }}</h2>
+      <div class="actions">
+        <a class="button secondary" href="{% url 'item_update' object.pk %}">Editer</a>
+        <a class="button ghost" href="{% url 'item_delete' object.pk %}">Supprimer</a>
+      </div>
+    </div>
+
+    <div class="meta">{{ object.get_type_display }} · {{ object.get_status_display }}{% if object.category %} · {{ object.category.name }}{% endif %}</div>
+
+    <div style="margin-top: 20px; white-space: pre-wrap;">
+      {{ object.content|default:"Aucun contenu" }}
+    </div>
+
+    <div class="actions" style="margin-top: 20px;">
+      {% if object.is_idea %}
+        <form method="post" action="{% url 'item_convert' object.pk %}">
+          {% csrf_token %}
+          <button class="button" type="submit">Convertir en projet</button>
+        </form>
+      {% endif %}
+      <a class="button secondary" href="{% url 'item_list' %}">Retour</a>
+    </div>
+  </div>
+{% endblock %}

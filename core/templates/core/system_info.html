@@ -1,0 +1,54 @@
+{% extends "core/base.html" %}
+
+{% block title %}Systeme | StudioBoard{% endblock %}
+
+{% block content %}
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="section-title">
+      <h2>Infos systeme</h2>
+    </div>
+    <p class="meta">Vue rapide de l'etat du Raspberry Pi.</p>
+  </div>
+
+  <div class="grid grid-2">
+    <section class="card">
+      <h2>Machine</h2>
+      <div class="info-list">
+        <div class="info-row"><span>Nom d'hote</span><span>{{ system.hostname }}</span></div>
+        <div class="info-row"><span>OS</span><span>{{ system.os }}</span></div>
+        <div class="info-row"><span>Noyau</span><span>{{ system.kernel }}</span></div>
+        <div class="info-row"><span>Python</span><span>{{ system.python }}</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>CPU & Charge</h2>
+      <div class="info-list">
+        <div class="info-row"><span>CPU</span><span>{{ system.cpu_count }}</span></div>
+        <div class="info-row"><span>Charge</span><span>{{ system.load_avg }}</span></div>
+        <div class="info-row"><span>Temperature</span><span>{{ system.temperature }}</span></div>
+        <div class="info-row"><span>Uptime</span><span>{{ system.uptime }}</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Memoire</h2>
+      <div class="info-list">
+        <div class="info-row"><span>Total</span><span>{{ system.memory_total }}</span></div>
+        <div class="info-row"><span>Utilisee</span><span>{{ system.memory_used }}</span></div>
+        <div class="info-row"><span>Disponible</span><span>{{ system.memory_available }}</span></div>
+        <div class="info-row"><span>Utilisation</span><span>{{ system.memory_percent }}</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Disque</h2>
+      <div class="info-list">
+        <div class="info-row"><span>Total</span><span>{{ system.disk_total }}</span></div>
+        <div class="info-row"><span>Utilise</span><span>{{ system.disk_used }}</span></div>
+        <div class="info-row"><span>Libre</span><span>{{ system.disk_free }}</span></div>
+        <div class="info-row"><span>Utilisation</span><span>{{ system.disk_percent }}</span></div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

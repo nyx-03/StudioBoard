@@ -1,0 +1,37 @@
+{% extends "core/base.html" %}
+
+{% block title %}Connexion | StudioBoard{% endblock %}
+
+{% block content %}
+  <div class="card" style="max-width: 480px; margin: 0 auto;">
+    <div class="section-title">
+      <h2>Connexion</h2>
+    </div>
+
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="flash">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="field">
+        <label class="label" for="{{ form.username.id_for_label }}">Utilisateur</label>
+        {{ form.username }}
+        {{ form.username.errors }}
+      </div>
+      <div class="field">
+        <label class="label" for="{{ form.password.id_for_label }}">Mot de passe</label>
+        {{ form.password }}
+        {{ form.password.errors }}
+      </div>
+
+      {% if next %}
+        <input type="hidden" name="next" value="{{ next }}" />
+      {% endif %}
+
+      <div class="actions">
+        <button class="button" type="submit">Se connecter</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

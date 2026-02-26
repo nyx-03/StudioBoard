@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Django
+*.sqlite3
+*.log
+local_settings.py
+media/
+staticfiles/
+
+# Project data
+projects/
+
+# Environment files
+.env
+.env.*
+
+# Unit test / coverage reports
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Type checker
+.mypy_cache/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# IDEs
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,196 @@
+{% extends "core/base.html" %}
+
+{% block title %}Kanban | StudioBoard{% endblock %}
+
+{% block content %}
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="section-title">
+      <h2>Kanban</h2>
+      <a class="button" href="{% url 'item_create' %}">Ajouter</a>
+    </div>
+    <p class="meta">Visualise tes idees et projets par status. Glisser-deposer non inclus pour l'instant.</p>
+  </div>
+
+  <section class="kanban-section">
+    <h2 class="kanban-title">Idees</h2>
+    <div class="kanban-board">
+      {% for column in idea_columns %}
+        <div class="kanban-column" data-status="{{ column.key }}" data-type="idea">
+          <div class="kanban-header">
+            <span>{{ column.label }}</span>
+            <span class="badge" data-count>{{ column.items|length }}</span>
+          </div>
+          <div class="kanban-items" data-list>
+            {% if column.items %}
+              {% for item in column.items %}
+                <article class="kanban-card" draggable="true" data-item-id="{{ item.pk }}" data-item-type="idea" data-move-url="{% url 'item_move' item.pk %}">
+                  <div class="item-title">{{ item.title }}</div>
+                  <div class="meta">{% if item.category %}{{ item.category.name }} · {% endif %}{{ item.get_type_display }}</div>
+                  <div class="actions">
+                    <a class="button secondary" href="{% url 'item_detail' item.pk %}">Ouvrir</a>
+                    <form method="post" action="{% url 'item_convert' item.pk %}">
+                      {% csrf_token %}
+                      <button class="button" type="submit">Convertir</button>
+                    </form>
+                  </div>
+                </article>
+              {% endfor %}
+            {% else %}
+              <div class="empty" data-empty>Aucune idee.</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="kanban-section" style="margin-top: 32px;">
+    <h2 class="kanban-title">Projets</h2>
+    <div class="kanban-board">
+      {% for column in project_columns %}
+        <div class="kanban-column" data-status="{{ column.key }}" data-type="project">
+          <div class="kanban-header">
+            <span>{{ column.label }}</span>
+            <span class="badge" data-count>{{ column.items|length }}</span>
+          </div>
+          <div class="kanban-items" data-list>
+            {% if column.items %}
+              {% for item in column.items %}
+                <article class="kanban-card" draggable="true" data-item-id="{{ item.pk }}" data-item-type="project" data-move-url="{% url 'item_move' item.pk %}">
+                  <div class="item-title">{{ item.title }}</div>
+                  <div class="meta">{% if item.category %}{{ item.category.name }} · {% endif %}{{ item.get_type_display }}</div>
+                  <div class="actions">
+                    <a class="button secondary" href="{% url 'item_detail' item.pk %}">Ouvrir</a>
+                    <a class="button" href="{% url 'item_update' item.pk %}">Mettre a jour</a>
+                  </div>
+                </article>
+              {% endfor %}
+            {% else %}
+              <div class="empty" data-empty>Aucun projet.</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div id="kanban-toast" class="kanban-toast" role="status" aria-live="polite"></div>
+  <form method="post" style="display: none;">{% csrf_token %}</form>
+
+  <script>
+    (function () {
+      const columns = Array.from(document.querySelectorAll(".kanban-column"));
+      const toast = document.getElementById("kanban-toast");
+
+      const showToast = (message, isError) => {
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.toggle("error", Boolean(isError));
+        toast.classList.add("visible");
+        window.clearTimeout(showToast._t);
+        showToast._t = window.setTimeout(() => toast.classList.remove("visible"), 2200);
+      };
+
+      const getCookie = (name) => {
+        const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+        return match ? decodeURIComponent(match[2]) : null;
+      };
+
+      const updateCounts = () => {
+        columns.forEach((col) => {
+          const list = col.querySelector("[data-list]");
+          const count = list ? list.querySelectorAll(".kanban-card").length : 0;
+          const badge = col.querySelector("[data-count]");
+          if (badge) badge.textContent = count;
+          if (list) {
+            const empty = list.querySelector("[data-empty]");
+            if (empty) {
+              empty.style.display = count === 0 ? "block" : "none";
+            }
+          }
+        });
+      };
+
+      let dragged = null;
+      let originList = null;
+
+      document.querySelectorAll(".kanban-card[draggable]").forEach((card) => {
+        card.addEventListener("dragstart", (event) => {
+          dragged = card;
+          originList = card.closest("[data-list]");
+          card.classList.add("dragging");
+          event.dataTransfer.effectAllowed = "move";
+          try {
+            event.dataTransfer.setData("text/plain", card.dataset.itemId);
+          } catch (err) {}
+        });
+
+        card.addEventListener("dragend", () => {
+          if (dragged) dragged.classList.remove("dragging");
+          dragged = null;
+          originList = null;
+        });
+      });
+
+      columns.forEach((column) => {
+        const list = column.querySelector("[data-list]");
+        if (!list) return;
+
+        list.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+          column.classList.add("drop-target");
+        });
+
+        list.addEventListener("dragleave", () => {
+          column.classList.remove("drop-target");
+        });
+
+        list.addEventListener("drop", async (event) => {
+          event.preventDefault();
+          column.classList.remove("drop-target");
+          if (!dragged) return;
+
+          const targetType = column.dataset.type;
+          const targetStatus = column.dataset.status;
+          const itemType = dragged.dataset.itemType;
+
+          if (targetType !== itemType) {
+            showToast("Utilise le bouton Convertir pour changer le type.", true);
+            return;
+          }
+
+          list.appendChild(dragged);
+          updateCounts();
+
+          const response = await fetch(dragged.dataset.moveUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken") || "",
+            },
+            body: JSON.stringify({ status: targetStatus, type: targetType }),
+          });
+
+          if (!response.ok) {
+            if (originList) {
+              originList.appendChild(dragged);
+            }
+            updateCounts();
+            let error = "Impossible de deplacer.";
+            try {
+              const data = await response.json();
+              error = data.error || error;
+            } catch (err) {}
+            showToast(error, true);
+            return;
+          }
+
+          showToast("Status mis a jour.");
+        });
+      });
+
+      updateCounts();
+    })();
+  </script>
+{% endblock %}

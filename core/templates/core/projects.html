@@ -1,0 +1,108 @@
+{% extends "core/base.html" %}
+
+{% block title %}Projets | StudioBoard{% endblock %}
+
+{% block content %}
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="section-title">
+      <h2>Gestion des projets</h2>
+    </div>
+    <div class="meta">Racine des projets: {{ projects_root }}</div>
+    <div class="breadcrumbs">
+      {% for crumb in breadcrumbs %}
+        {% if forloop.first %}
+          <a href="{% url 'projects' %}">{{ crumb.name }}</a>
+        {% else %}
+          <span>/</span>
+          <a href="{% url 'projects' %}?path={{ crumb.path|urlencode }}">{{ crumb.name }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom: 24px;">
+    <section class="card">
+      <h2>Nouveau dossier</h2>
+      <form method="post" class="form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_folder" />
+        <input type="hidden" name="path" value="{{ relative_path }}" />
+        <div class="field">
+          <label class="label" for="id_new_folder">Nom du dossier</label>
+          <input class="input" id="id_new_folder" name="new_folder" placeholder="Mon projet" />
+        </div>
+        <button class="button" type="submit">Creer</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Importer un projet</h2>
+      <form method="post" enctype="multipart/form-data" class="form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload" />
+        <input type="hidden" name="path" value="{{ relative_path }}" />
+        <div class="field">
+          <label class="label" for="id_project_name">Nom du projet (optionnel)</label>
+          <input class="input" id="id_project_name" name="project_name" placeholder="Nom du dossier" />
+        </div>
+        <div class="field">
+          <label class="label" for="id_project_zip">Archive .zip</label>
+          <input class="input" id="id_project_zip" name="project_zip" type="file" accept=".zip" required />
+        </div>
+        <button class="button" type="submit">Importer</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="card" style="margin-bottom: 24px;">
+    <h2>Importer un dossier</h2>
+    <form method="post" enctype="multipart/form-data" class="form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="upload_folder" />
+      <input type="hidden" name="path" value="{{ relative_path }}" />
+      <div class="field">
+        <label class="label" for="id_folder_name">Nom du dossier (optionnel)</label>
+        <input class="input" id="id_folder_name" name="folder_name" placeholder="Nom du dossier racine" />
+      </div>
+      <div class="field">
+        <label class="label" for="id_project_folder">Selectionne un dossier</label>
+        <input class="input" id="id_project_folder" name="project_folder" type="file" webkitdirectory directory multiple required />
+      </div>
+      <button class="button" type="submit">Importer le dossier</button>
+    </form>
+    <div class="meta" style="margin-top: 10px;">
+      Utilise un navigateur desktop compatible (Chrome, Edge, Brave). Safari/iOS peut limiter l'envoi.
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">
+      <h2>Explorateur</h2>
+      <div class="meta">Dossier courant: {{ current_path }}</div>
+    </div>
+
+    <div class="file-list">
+      {% if entries %}
+        {% for entry in entries %}
+          <div class="file-row">
+            <div>
+              <div class="item-title">
+                {% if entry.is_dir %}
+                  <a href="{% url 'projects' %}?path={{ entry.rel_path|urlencode }}">{{ entry.name }}</a>
+                {% else %}
+                  <span>{{ entry.name }}</span>
+                {% endif %}
+              </div>
+              <div class="meta">{% if entry.is_dir %}Dossier{% else %}Fichier{% endif %}</div>
+            </div>
+            <div class="meta file-meta">
+              {% if entry.size %}{{ entry.size }} · {% endif %}{{ entry.modified|date:"Y-m-d H:i" }}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">Aucun fichier dans ce dossier.</div>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

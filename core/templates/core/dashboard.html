@@ -1,0 +1,56 @@
+{% extends "core/base.html" %}
+
+{% block title %}Tableau | StudioBoard{% endblock %}
+
+{% block content %}
+  <div class="grid grid-2">
+    <section class="card">
+      <div class="section-title">
+        <h2>Idees</h2>
+        <a class="button ghost" href="{% url 'item_create' %}?type=idea">Ajouter</a>
+      </div>
+      {% if ideas %}
+        <div class="grid">
+          {% for item in ideas %}
+            <article class="item-card">
+              <div class="item-title">{{ item.title }}</div>
+              <div class="meta">{{ item.get_status_display }}{% if item.category %} · {{ item.category.name }}{% endif %}</div>
+              <div class="actions">
+                <a class="button secondary" href="{% url 'item_detail' item.pk %}">Ouvrir</a>
+                <form method="post" action="{% url 'item_convert' item.pk %}">
+                  {% csrf_token %}
+                  <button class="button" type="submit">Convertir</button>
+                </form>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">Aucune idee pour le moment.</div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>Projets</h2>
+        <a class="button ghost" href="{% url 'item_create' %}?type=project">Ajouter</a>
+      </div>
+      {% if projects %}
+        <div class="grid">
+          {% for item in projects %}
+            <article class="item-card">
+              <div class="item-title">{{ item.title }}</div>
+              <div class="meta">{{ item.get_status_display }}{% if item.category %} · {{ item.category.name }}{% endif %}</div>
+              <div class="actions">
+                <a class="button secondary" href="{% url 'item_detail' item.pk %}">Ouvrir</a>
+                <a class="button" href="{% url 'item_update' item.pk %}">Mettre a jour</a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">Aucun projet pour le moment.</div>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}
